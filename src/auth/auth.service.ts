@@ -2,6 +2,7 @@ import { UsersService } from '@/modules/users/users.service';
 import { comparePasswordHelper } from '@/util/helper';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { RegisterDto } from './dto/RegisterDto-auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -15,13 +16,24 @@ export class AuthService {
     pass: string,
   ): Promise<{ access_token: string }> {
     const user: any = await this.usersService.SignWithEmail(username);
+    if (!user) {
+      return null;
+    }
     const comparePassword = await comparePasswordHelper(pass, user.password)
     if (!comparePassword) {
-      throw new UnauthorizedException('usernam/password khong hop le');
+      return null;
+    } else {
+      return user;
     }
-    const payload = { sub: user.id, username: user.email };
+  };
+
+  async login(user: any) {
+    const payload = { username: user.email, sub: user._id };
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      access_token: this.jwtService.sign(payload),
     };
+  }
+  async register(registerDto: RegisterDto) {
+    return this.usersService.registerUser(registerDto);
   }
 }

@@ -6,8 +6,9 @@ import { User } from './schemas/user.schema';
 import mongoose, { Model } from 'mongoose';
 import { hashPasswordHelper } from '@/util/helper';
 import aqp from 'api-query-params';
-import { SourceTextModule } from 'vm';
 import { UsersModule } from './users.module';
+import { RegisterDto } from '@/auth/dto/RegisterDto-auth.dto';
+import dayjs = require('dayjs')
 
 @Injectable()
 export class UsersService {
@@ -76,5 +77,24 @@ export class UsersService {
 
 
     return await this.UserModel.findOne({ email });
+  }
+  async registerUser(registerDto: RegisterDto): Promise<User> {
+    const { name, password, email } = registerDto;
+    const hashPassword = await hashPasswordHelper(password)
+    const isExist = await this.isExistEmail(email);
+    if (isExist === true) throw new BadRequestException('Something bad happened', { cause: new Error(), description: 'Some error description' })
+    else {
+      const createdUser = await this.UserModel.create({
+        name,
+        password: hashPassword,
+        email,
+        isActive: false,
+        codeId: Math.floor(100000 + Math.random() * 900000),
+        codeExpired: dayjs().add(1, 'hour') // manipulate
+
+      });
+      return createdUser;
+    }
+
   }
 }
